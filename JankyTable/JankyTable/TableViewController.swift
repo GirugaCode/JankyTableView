@@ -34,25 +34,28 @@ class TableViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CellIdentifier", for: indexPath)
         let rowKey = photos.allKeys[indexPath.row] as! String
         
-        var image : UIImage?
         
-        guard let imageURL = URL(string:photos[rowKey] as! String),
-            let imageData = try? Data(contentsOf: imageURL) else {
-                return cell
+        // Placed in the background thread
+        DispatchQueue.global(qos: .background).async {
+            guard let imageURL = URL(string:self.photos[rowKey] as! String),
+                let imageData = try? Data(contentsOf: imageURL) else {
+                    return
+            }
+            
+            let unfilteredImage = UIImage(data:imageData)
+            let image = self.applySepiaFilter(unfilteredImage!)
+            
+            // Placed in the main thread
+            DispatchQueue.main.async {
+                cell.textLabel?.text = rowKey
+                if image != nil {
+                    cell.imageView?.image = image!
+                }
+            }
         }
-        
         // Simulate a network wait
-        Thread.sleep(forTimeInterval: 1)
-        print("sleeping 1 sec")
-        
-        let unfilteredImage = UIImage(data:imageData)
-        image = self.applySepiaFilter(unfilteredImage!)
-        
-        // Configure the cell...
-        cell.textLabel?.text = rowKey
-        if image != nil {
-            cell.imageView?.image = image!
-        }
+        //Thread.sleep(forTimeInterval: 1)
+        //print("sleeping 1 sec")
         return cell
     }
     
